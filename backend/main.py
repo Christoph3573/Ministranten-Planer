@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, func
@@ -12,12 +13,13 @@ from backend.models import (
     get_wochentag,
 )
 
-app = FastAPI(title="Ministranten-Planer")
-
-
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
+    yield
+
+
+app = FastAPI(title="Ministranten-Planer", lifespan=lifespan)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
