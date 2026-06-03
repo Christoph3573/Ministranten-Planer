@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ministranten-Planer</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <h1>⛪ Ministranten-Planer</h1>
+    <div class="actions">
+      <button class="btn-primary" onclick="openTerminModal()">+ Termin</button>
+      <button class="btn-secondary" onclick="exportDocx()">📥 DOCX Export</button>
+    </div>
+  </div>
+
+  <!-- Split view -->
+  <div class="split">
+
+    <!-- Left: Termine -->
+    <div class="panel-termine">
+      <div class="panel-header">Termine</div>
+      <div class="termine-list" id="termine-list">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- Right: Pool -->
+    <div class="panel-pool">
+      <div class="pool-header">
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Pool</span>
+        <button class="btn-ghost" onclick="openPoolModal()">+ Person</button>
+      </div>
+      <div class="pool-list" id="pool-list">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Termin Modal -->
+  <div class="modal-overlay hidden" id="termin-modal">
+    <div class="modal">
+      <h2 id="termin-modal-title">Termin hinzufügen</h2>
+      <div class="form-group">
+        <label>Datum</label>
+        <input type="date" id="t-datum">
+      </div>
+      <div class="form-group">
+        <label>Uhrzeit</label>
+        <input type="text" id="t-uhrzeit" placeholder="z.B. 18:00 Uhr">
+      </div>
+      <div class="form-group">
+        <label>Priester (optional)</label>
+        <input type="text" id="t-priester" placeholder="z.B. Pfr. Bula">
+      </div>
+      <div class="form-group">
+        <label>Ereignis (optional)</label>
+        <input type="text" id="t-ereignis" placeholder="z.B. Vorstellungsgottesdienst">
+      </div>
+      <div class="form-group">
+        <label>Benötigte Ministranten</label>
+        <input type="number" id="t-anzahl" min="1" value="2">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeTerminModal()">Abbrechen</button>
+        <button class="btn-primary" onclick="saveTermin()">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pool Modal (Add Person) -->
+  <div class="modal-overlay hidden" id="pool-modal">
+    <div class="modal">
+      <h2>Person hinzufügen</h2>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="p-name" placeholder="Vollständiger Name">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closePoolModal()">Abbrechen</button>
+        <button class="btn-primary" onclick="savePool()">Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
