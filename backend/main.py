@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
-from sqlmodel import Session, select, func
+from sqlmodel import SQLModel, Session, select, func
 from typing import List
 import os
+import random
 
 from backend.database import get_session, init_db
 from backend.models import (
@@ -162,6 +163,82 @@ def delete_termin(termin_id: int, session: Session = Depends(get_session)):
     session.delete(t)
     session.commit()
     return result
+
+
+# ── Zuteilung ─────────────────────────────────────────────────────────────────
+
+class ZuteilungCreate(SQLModel):
+    ministrant_id: int
+
+
+@app.post("/termine/{termin_id}/auto-assign", response_model=TerminRead)
+def auto_assign(termin_id: int, session: Session = Depends(get_session)):
+    t = session.get(Termin, termin_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+
+    already_assigned_ids = {z.ministrant_id for z in t.zuteilungen}
+    noch_benoetigt = t.anzahl_benoetigt - len(already_assigned_ids)
+
+    if noch_benoetigt <= 0:
+        return _termin_read(t, session)
+
+    candidates = session.exec(
+        select(Ministrant).where(Ministrant.aktiv == True)
+    ).all()
+    candidates = [m for m in candidates if m.id not in already_assigned_ids]
+
+    def assignment_count(m: Ministrant) -> int:
+        return session.exec(
+            select(func.count()).where(Zuteilung.ministrant_id == m.id)
+        ).one()
+
+    random.shuffle(candidates)  # random tie-breaking
+    candidates.sort(key=assignment_count)  # stable sort: fewest assignments first
+    selected = candidates[:noch_benoetigt]
+
+    for m in selected:
+        session.add(Zuteilung(termin_id=termin_id, ministrant_id=m.id))
+    session.commit()
+    session.refresh(t)
+    return _termin_read(t, session)
+
+
+@app.post("/termine/{termin_id}/zuteilung", response_model=TerminRead)
+def add_zuteilung(
+    termin_id: int,
+    data: ZuteilungCreate,
+    session: Session = Depends(get_session),
+):
+    t = session.get(Termin, termin_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    m = session.get(Ministrant, data.ministrant_id)
+    if not m:
+        raise HTTPException(status_code=404, detail="Ministrant nicht gefunden")
+    existing = session.get(Zuteilung, (termin_id, data.ministrant_id))
+    if not existing:
+        session.add(Zuteilung(termin_id=termin_id, ministrant_id=data.ministrant_id))
+        session.commit()
+    session.refresh(t)
+    return _termin_read(t, session)
+
+
+@app.delete("/termine/{termin_id}/zuteilung/{ministrant_id}", response_model=TerminRead)
+def remove_zuteilung(
+    termin_id: int,
+    ministrant_id: int,
+    session: Session = Depends(get_session),
+):
+    t = session.get(Termin, termin_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    z = session.get(Zuteilung, (termin_id, ministrant_id))
+    if z:
+        session.delete(z)
+        session.commit()
+    session.refresh(t)
+    return _termin_read(t, session)
 
 
 # ── Static files (frontend) ───────────────────────────────────────────────────
