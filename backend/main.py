@@ -83,10 +83,9 @@ def update_ministrant(
     m = session.get(Ministrant, ministrant_id)
     if not m:
         raise HTTPException(status_code=404, detail="Ministrant nicht gefunden")
-    if data.name is not None:
-        m.name = data.name
-    if data.aktiv is not None:
-        m.aktiv = data.aktiv
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(m, key, value)
     session.add(m)
     session.commit()
     session.refresh(m)
@@ -139,16 +138,9 @@ def update_termin(
     t = session.get(Termin, termin_id)
     if not t:
         raise HTTPException(status_code=404, detail="Termin nicht gefunden")
-    if data.datum is not None:
-        t.datum = data.datum
-    if data.uhrzeit is not None:
-        t.uhrzeit = data.uhrzeit
-    if data.priester is not None:
-        t.priester = data.priester
-    if data.ereignis is not None:
-        t.ereignis = data.ereignis
-    if data.anzahl_benoetigt is not None:
-        t.anzahl_benoetigt = data.anzahl_benoetigt
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(t, key, value)
     session.add(t)
     session.commit()
     return _termin_read(t, session)

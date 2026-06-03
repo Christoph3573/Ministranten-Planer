@@ -4,6 +4,17 @@ let ministranten = [];
 let selectedTerminId = null;
 let editingTerminId = null;
 
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ── API ───────────────────────────────────────────────────────────────────────
 const api = {
   async get(path) {
@@ -52,11 +63,11 @@ function renderTermine() {
     const missing = t.anzahl_benoetigt - assignedCount;
     const dateStr = new Date(t.datum + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
     const titleStr = `${t.wochentag}, ${dateStr}`;
-    const timeStr = t.uhrzeit + (t.priester ? ` · ${t.priester}` : "");
+    const timeStr = t.uhrzeit + (t.priester ? ` · ${escapeHtml(t.priester)}` : "");
 
     let chipsHtml = t.zuteilungen.map(z => `
       <span class="chip">
-        ${z.name}
+        ${escapeHtml(z.name)}
         <span class="remove" onclick="event.stopPropagation(); removeZuteilung(${t.id}, ${z.ministrant_id})">✕</span>
       </span>`).join("");
 
@@ -70,7 +81,7 @@ function renderTermine() {
         <div>
           <span class="termin-title">${titleStr}</span>
           <span class="termin-time">${timeStr}</span>
-          ${t.ereignis ? `<span class="termin-badge">${t.ereignis}</span>` : ""}
+          ${t.ereignis ? `<span class="termin-badge">${escapeHtml(t.ereignis)}</span>` : ""}
         </div>
         <div class="termin-actions">
           <span class="termin-count">${assignedCount}/${t.anzahl_benoetigt}</span>
@@ -101,7 +112,7 @@ function renderPool() {
     div.className = "pool-person" + (!m.aktiv ? " inactive" : "");
     div.onclick = () => m.aktiv && addZuteilungFromPool(m.id);
     div.innerHTML = `
-      <span class="name">${m.name}</span>
+      <span class="name">${escapeHtml(m.name)}</span>
       <div style="display:flex;gap:6px;align-items:center">
         <span class="count">${m.anzahl_zuteilungen} ×</span>
         <button class="btn-ghost" style="font-size:11px" onclick="event.stopPropagation(); toggleAktiv(${m.id}, ${!m.aktiv})">${m.aktiv ? "⏸" : "▶"}</button>
