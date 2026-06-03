@@ -104,6 +104,66 @@ def delete_ministrant(ministrant_id: int, session: Session = Depends(get_session
     return result
 
 
+# ── Termine ───────────────────────────────────────────────────────────────────
+
+@app.get("/termine", response_model=List[TerminRead])
+def list_termine(session: Session = Depends(get_session)):
+    termine = session.exec(select(Termin).order_by(Termin.datum)).all()
+    return [_termin_read(t, session) for t in termine]
+
+
+@app.post("/termine", response_model=TerminRead)
+def create_termin(data: TerminCreate, session: Session = Depends(get_session)):
+    t = Termin(
+        datum=data.datum,
+        uhrzeit=data.uhrzeit,
+        priester=data.priester,
+        ereignis=data.ereignis,
+        anzahl_benoetigt=data.anzahl_benoetigt,
+    )
+    session.add(t)
+    session.commit()
+    session.refresh(t)
+    return _termin_read(t, session)
+
+
+@app.put("/termine/{termin_id}", response_model=TerminRead)
+def update_termin(
+    termin_id: int,
+    data: TerminUpdate,
+    session: Session = Depends(get_session),
+):
+    t = session.get(Termin, termin_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    if data.datum is not None:
+        t.datum = data.datum
+    if data.uhrzeit is not None:
+        t.uhrzeit = data.uhrzeit
+    if data.priester is not None:
+        t.priester = data.priester
+    if data.ereignis is not None:
+        t.ereignis = data.ereignis
+    if data.anzahl_benoetigt is not None:
+        t.anzahl_benoetigt = data.anzahl_benoetigt
+    session.add(t)
+    session.commit()
+    return _termin_read(t, session)
+
+
+@app.delete("/termine/{termin_id}", response_model=TerminRead)
+def delete_termin(termin_id: int, session: Session = Depends(get_session)):
+    t = session.get(Termin, termin_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    result = _termin_read(t, session)
+    for z in list(t.zuteilungen):
+        session.delete(z)
+    session.delete(t)
+    session.commit()
+    return result
+
+
 # ── Static files (frontend) ───────────────────────────────────────────────────
 
 frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
