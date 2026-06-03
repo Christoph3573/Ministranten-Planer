@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel, Session, select, func
 from typing import List
@@ -7,6 +8,7 @@ import os
 import random
 
 from backend.database import get_session, init_db
+from backend.export import generate_docx
 from backend.models import (
     Ministrant, MinistrantCreate, MinistrantUpdate, MinistrantRead,
     Termin, TerminCreate, TerminUpdate, TerminRead,
@@ -239,6 +241,20 @@ def remove_zuteilung(
         session.commit()
     session.refresh(t)
     return _termin_read(t, session)
+
+
+# ── Export ────────────────────────────────────────────────────────────────────
+
+@app.get("/export/docx")
+def export_docx(session: Session = Depends(get_session)):
+    termine = session.exec(select(Termin).order_by(Termin.datum)).all()
+    termine_read = [_termin_read(t, session) for t in termine]
+    buf = generate_docx(termine_read)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": "attachment; filename=ministrantenplan.docx"},
+    )
 
 
 # ── Static files (frontend) ───────────────────────────────────────────────────
