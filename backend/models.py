@@ -16,6 +16,7 @@ class Ministrant(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     aktiv: bool = True
+    alter: Optional[int] = Field(default=None)
     zuteilungen: List[Zuteilung] = Relationship(back_populates="ministrant")
 
 
@@ -59,6 +60,7 @@ class TerminRead(SQLModel):
 class MinistrantCreate(SQLModel):
     name: str
     aktiv: bool = True
+    alter: Optional[int] = None
 
 
 class MinistrantUpdate(SQLModel):

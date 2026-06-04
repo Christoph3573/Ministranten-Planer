@@ -103,7 +103,7 @@ def list_ministranten(session: Session = Depends(get_session)):
 
 @app.post("/ministranten", response_model=MinistrantRead)
 def create_ministrant(data: MinistrantCreate, session: Session = Depends(get_session)):
-    m = Ministrant(name=data.name, aktiv=data.aktiv)
+    m = Ministrant(name=data.name, aktiv=data.aktiv, alter=data.alter)
     session.add(m)
     session.commit()
     session.refresh(m)

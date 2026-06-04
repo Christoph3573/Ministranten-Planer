@@ -1,4 +1,5 @@
 from sqlmodel import create_engine, Session, SQLModel
+from sqlalchemy import text
 from typing import Generator
 
 DATABASE_URL = "sqlite:///ministranten.db"
@@ -12,6 +13,12 @@ engine = create_engine(
 
 def init_db() -> None:
     SQLModel.metadata.create_all(engine)
+    with engine.connect() as conn:
+        try:
+            conn.execute(text('ALTER TABLE ministrant ADD COLUMN "alter" INTEGER'))
+            conn.commit()
+        except Exception:
+            pass  # Spalte existiert bereits
 
 
 def get_session() -> Generator[Session, None, None]:

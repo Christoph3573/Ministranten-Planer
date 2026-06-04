@@ -34,3 +34,16 @@ def test_delete_ministrant(client):
 def test_delete_nonexistent_ministrant(client):
     r = client.delete("/ministranten/9999")
     assert r.status_code == 404
+
+
+def test_create_ministrant_with_alter(client):
+    r = client.post("/ministranten", json={"name": "Anna", "aktiv": True, "alter": 12})
+    assert r.status_code == 200
+    data = r.json()
+    assert "alter" not in data  # alter wird nie zurückgegeben
+
+
+def test_create_ministrant_without_alter(client):
+    r = client.post("/ministranten", json={"name": "Bob"})
+    assert r.status_code == 200
+    assert "alter" not in r.json()
