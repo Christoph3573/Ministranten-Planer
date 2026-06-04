@@ -30,6 +30,7 @@ def client_fixture(session: Session, monkeypatch):
         yield session
 
     app.dependency_overrides[get_session] = get_session_override
+    # TestClient auth= kwarg not supported in installed starlette/httpx version
     credentials = base64.b64encode(b"admin:testpassword").decode("ascii")
     with TestClient(app, headers={"Authorization": f"Basic {credentials}"}) as c:
         yield c
