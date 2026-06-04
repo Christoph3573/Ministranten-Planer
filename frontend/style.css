@@ -241,11 +241,11 @@ button:hover { opacity: 0.85; }
 
 .github-link {
   display: block;
+  flex-shrink: 0;
   padding: 8px 12px;
   font-size: 11px;
   color: var(--text-muted);
   text-decoration: none;
   border-top: 1px solid var(--border);
-  margin-top: auto;
 }
 .github-link:hover { color: var(--text); }
