@@ -66,6 +66,7 @@ class MinistrantCreate(SQLModel):
 class MinistrantUpdate(SQLModel):
     name: Optional[str] = None
     aktiv: Optional[bool] = None
+    alter: Optional[int] = None
 
 
 class TerminCreate(SQLModel):

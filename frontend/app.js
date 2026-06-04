@@ -18,22 +18,22 @@ function escapeHtml(str) {
 // ── API ───────────────────────────────────────────────────────────────────────
 const api = {
   async get(path) {
-    const r = await fetch(path);
+    const r = await fetch(path, { credentials: "include" });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
   async post(path, body) {
-    const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = await fetch(path, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
   async put(path, body) {
-    const r = await fetch(path, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = await fetch(path, { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
   async delete(path) {
-    const r = await fetch(path, { method: "DELETE" });
+    const r = await fetch(path, { method: "DELETE", credentials: "include" });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
@@ -115,6 +115,7 @@ function renderPool() {
       <span class="name">${escapeHtml(m.name)}</span>
       <div style="display:flex;gap:6px;align-items:center">
         <span class="count">${m.anzahl_zuteilungen} ×</span>
+        <button class="btn-ghost" style="font-size:11px" onclick="event.stopPropagation(); setAlter(${m.id})">✎</button>
         <button class="btn-ghost" style="font-size:11px" onclick="event.stopPropagation(); toggleAktiv(${m.id}, ${!m.aktiv})">${m.aktiv ? "⏸" : "▶"}</button>
         <button class="btn-danger" onclick="event.stopPropagation(); deleteMinistrant(${m.id})">✕</button>
       </div>`;
@@ -137,11 +138,15 @@ async function doAutoAssign(terminId) {
 }
 
 async function autoAssignAll() {
-  const unfinished = termine.filter(t => t.zuteilungen.length < t.anzahl_benoetigt);
-  for (const t of unfinished) {
-    await api.post(`/termine/${t.id}/auto-assign`, {});
+  try {
+    const unfinished = termine.filter(t => t.zuteilungen.length < t.anzahl_benoetigt);
+    for (const t of unfinished) {
+      await api.post(`/termine/${t.id}/auto-assign`, {});
+    }
+    await loadAll();
+  } catch (e) {
+    alert("Fehler beim automatischen Zuweisen: " + e.message);
   }
-  await loadAll();
 }
 
 async function addZuteilungFromPool(ministrantId) {
@@ -176,6 +181,16 @@ async function deleteMinistrant(id) {
 
 async function toggleAktiv(id, aktiv) {
   await api.put(`/ministranten/${id}`, { aktiv });
+  ministranten = await api.get("/ministranten");
+  renderPool();
+}
+
+async function setAlter(id) {
+  const val = prompt("Alter eintragen (leer = kein Alter):");
+  if (val === null) return;
+  const alter = val.trim() === "" ? null : parseInt(val);
+  if (val.trim() !== "" && isNaN(alter)) return alert("Bitte eine Zahl eingeben.");
+  await api.put(`/ministranten/${id}`, { alter });
   ministranten = await api.get("/ministranten");
   renderPool();
 }
