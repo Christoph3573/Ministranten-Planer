@@ -5,6 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=pi
+EnvironmentFile=/home/pi/Ministranten-Planer/.env
 WorkingDirectory=/home/pi/Ministranten-Planer
 ExecStart=/home/pi/Ministranten-Planer/start.sh
 Restart=on-failure
