@@ -1,3 +1,5 @@
+import base64
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import create_engine, SQLModel, Session
@@ -20,13 +22,15 @@ def session_fixture():
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: Session):
+def client_fixture(session: Session, monkeypatch):
+    monkeypatch.setenv("APP_PASSWORD", "testpassword")
     from backend.main import app
 
     def get_session_override():
         yield session
 
     app.dependency_overrides[get_session] = get_session_override
-    with TestClient(app) as c:
+    credentials = base64.b64encode(b"admin:testpassword").decode("ascii")
+    with TestClient(app, headers={"Authorization": f"Basic {credentials}"}) as c:
         yield c
     app.dependency_overrides.clear()

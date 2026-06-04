@@ -1,11 +1,17 @@
+import base64
+import hmac
+import os
+import random
 from contextlib import asynccontextmanager
+from typing import List
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel, Session, select, func
-from typing import List
-import os
-import random
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 from backend.database import get_session, init_db
 from backend.export import generate_docx
@@ -16,13 +22,38 @@ from backend.models import (
     get_wochentag,
 )
 
+
+class BasicAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        password: str = request.app.state.password
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Basic "):
+            try:
+                decoded = base64.b64decode(auth[6:]).decode("utf-8")
+                _, _, provided = decoded.partition(":")
+                if hmac.compare_digest(provided, password):
+                    return await call_next(request)
+            except Exception:
+                pass
+        return Response(
+            "Unauthorized",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Ministranten-Planer"'},
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    password = os.environ.get("APP_PASSWORD")
+    if not password:
+        raise RuntimeError("APP_PASSWORD environment variable is not set")
+    app.state.password = password
     init_db()
     yield
 
 
 app = FastAPI(title="Ministranten-Planer", lifespan=lifespan)
+app.add_middleware(BasicAuthMiddleware)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
