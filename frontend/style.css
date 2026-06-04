@@ -238,3 +238,14 @@ button:hover { opacity: 0.85; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.github-link {
+  display: block;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+.github-link:hover { color: var(--text); }

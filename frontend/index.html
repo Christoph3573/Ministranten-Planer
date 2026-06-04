@@ -13,7 +13,8 @@
     <h1>⛪ Ministranten-Planer</h1>
     <div class="actions">
       <button class="btn-primary" onclick="openTerminModal()">+ Termin</button>
-      <button class="btn-secondary" onclick="exportDocx()">📥 DOCX Export</button>
+      <button class="btn-secondary" onclick="autoAssignAll()">⚡ Alle automatisch zuweisen</button>
+      <button class="btn-secondary" onclick="exportDocx()">📥 Plan herunterladen</button>
     </div>
   </div>
 
@@ -37,6 +38,7 @@
       <div class="pool-list" id="pool-list">
         <!-- filled by JS -->
       </div>
+      <a class="github-link" href="https://github.com/Christoph3573/Ministranten-Planer" target="_blank">GitHub</a>
     </div>
 
   </div>
@@ -79,6 +81,10 @@
       <div class="form-group">
         <label>Name</label>
         <input type="text" id="p-name" placeholder="Vollständiger Name">
+      </div>
+      <div class="form-group">
+        <label>Alter (optional)</label>
+        <input type="number" id="p-alter" min="1" max="99" placeholder="z.B. 12">
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closePoolModal()">Abbrechen</button>

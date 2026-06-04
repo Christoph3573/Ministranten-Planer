@@ -73,7 +73,7 @@ function renderTermine() {
 
     if (missing > 0) {
       chipsHtml += `<span class="chip-missing">+ ${missing} fehlen</span>`;
-      chipsHtml += `<button class="btn-auto" onclick="event.stopPropagation(); doAutoAssign(${t.id})">⚡ Auto-Assign</button>`;
+      chipsHtml += `<button class="btn-auto" onclick="event.stopPropagation(); doAutoAssign(${t.id})">⚡ Automatisch zuweisen</button>`;
     }
 
     div.innerHTML = `
@@ -134,6 +134,14 @@ async function doAutoAssign(terminId) {
   ministranten = await api.get("/ministranten");
   renderTermine();
   renderPool();
+}
+
+async function autoAssignAll() {
+  const unfinished = termine.filter(t => t.zuteilungen.length < t.anzahl_benoetigt);
+  for (const t of unfinished) {
+    await api.post(`/termine/${t.id}/auto-assign`, {});
+  }
+  await loadAll();
 }
 
 async function addZuteilungFromPool(ministrantId) {
@@ -211,6 +219,7 @@ async function saveTermin() {
 // ── Pool Modal ────────────────────────────────────────────────────────────────
 function openPoolModal() {
   document.getElementById("p-name").value = "";
+  document.getElementById("p-alter").value = "";
   document.getElementById("pool-modal").classList.remove("hidden");
 }
 
@@ -221,7 +230,10 @@ function closePoolModal() {
 async function savePool() {
   const name = document.getElementById("p-name").value.trim();
   if (!name) return alert("Name darf nicht leer sein.");
-  await api.post("/ministranten", { name, aktiv: true });
+  const alterVal = document.getElementById("p-alter").value;
+  const body = { name, aktiv: true };
+  if (alterVal) body.alter = parseInt(alterVal);
+  await api.post("/ministranten", body);
   closePoolModal();
   ministranten = await api.get("/ministranten");
   renderPool();
