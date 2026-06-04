@@ -25,13 +25,14 @@ from backend.models import (
 
 class BasicAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        username: str = request.app.state.username
         password: str = request.app.state.password
         auth = request.headers.get("Authorization", "")
         if auth.startswith("Basic "):
             try:
                 decoded = base64.b64decode(auth[6:]).decode("utf-8")
-                _, _, provided = decoded.partition(":")
-                if hmac.compare_digest(provided, password):
+                provided_user, _, provided_pass = decoded.partition(":")
+                if hmac.compare_digest(provided_user, username) and hmac.compare_digest(provided_pass, password):
                     return await call_next(request)
             except Exception:
                 pass
@@ -44,9 +45,13 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    username = os.environ.get("APP_USERNAME")
+    if not username:
+        raise RuntimeError("APP_USERNAME environment variable is not set")
     password = os.environ.get("APP_PASSWORD")
     if not password:
         raise RuntimeError("APP_PASSWORD environment variable is not set")
+    app.state.username = username
     app.state.password = password
     init_db()
     yield

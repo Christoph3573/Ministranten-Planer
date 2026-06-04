@@ -23,6 +23,7 @@ def session_fixture():
 
 @pytest.fixture(name="client")
 def client_fixture(session: Session, monkeypatch):
+    monkeypatch.setenv("APP_USERNAME", "testuser")
     monkeypatch.setenv("APP_PASSWORD", "testpassword")
     from backend.main import app
 
@@ -31,7 +32,7 @@ def client_fixture(session: Session, monkeypatch):
 
     app.dependency_overrides[get_session] = get_session_override
     # TestClient auth= kwarg not supported in installed starlette/httpx version
-    credentials = base64.b64encode(b"admin:testpassword").decode("ascii")
+    credentials = base64.b64encode(b"testuser:testpassword").decode("ascii")
     with TestClient(app, headers={"Authorization": f"Basic {credentials}"}) as c:
         yield c
     app.dependency_overrides.clear()
