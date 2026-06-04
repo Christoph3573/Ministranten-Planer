@@ -1,5 +1,6 @@
 import base64
 import hmac
+import math
 import os
 import random
 from contextlib import asynccontextmanager
@@ -218,14 +219,36 @@ def auto_assign(termin_id: int, session: Session = Depends(get_session)):
     ).all()
     candidates = [m for m in candidates if m.id not in already_assigned_ids]
 
-    def assignment_count(m: Ministrant) -> int:
-        return session.exec(
+    def sort_group(group):
+        random.shuffle(group)
+        group.sort(key=lambda m: session.exec(
             select(func.count()).where(Zuteilung.ministrant_id == m.id)
-        ).one()
+        ).one())
+        return group
 
-    random.shuffle(candidates)  # random tie-breaking
-    candidates.sort(key=assignment_count)  # stable sort: fewest assignments first
-    selected = candidates[:noch_benoetigt]
+    with_alter = sorted(
+        [m for m in candidates if m.alter is not None],
+        key=lambda m: m.alter,
+    )
+    neutral = [m for m in candidates if m.alter is None]
+
+    n = len(with_alter)
+    jung_group = sort_group(with_alter[:n // 2])
+    alt_group = sort_group(with_alter[n // 2:])
+    neutral = sort_group(neutral)
+
+    need_alt = math.ceil(noch_benoetigt / 2)
+    need_jung = noch_benoetigt - need_alt
+
+    selected = alt_group[:need_alt] + jung_group[:need_jung]
+
+    if len(selected) < noch_benoetigt:
+        used_ids = {m.id for m in selected}
+        fallback = sort_group([
+            m for m in neutral + alt_group + jung_group
+            if m.id not in used_ids
+        ])
+        selected += fallback[:noch_benoetigt - len(selected)]
 
     for m in selected:
         session.add(Zuteilung(termin_id=termin_id, ministrant_id=m.id))

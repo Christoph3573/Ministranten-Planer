@@ -66,3 +66,39 @@ def test_auto_assign_prefers_least_assigned(client, setup):
     r = client.post(f"/termine/{t2_id}/auto-assign")
     assigned_ids = [z["ministrant_id"] for z in r.json()["zuteilungen"]]
     assert m_ids[0] not in assigned_ids  # Anna (1 service) should not be picked when others have 0
+
+
+def test_auto_assign_mixes_jung_and_alt(client):
+    # 2 junge (niedriges Alter) + 2 alte (hohes Alter) Ministranten
+    jung1 = client.post("/ministranten", json={"name": "Jung1", "alter": 10}).json()["id"]
+    jung2 = client.post("/ministranten", json={"name": "Jung2", "alter": 11}).json()["id"]
+    alt1 = client.post("/ministranten", json={"name": "Alt1", "alter": 40}).json()["id"]
+    alt2 = client.post("/ministranten", json={"name": "Alt2", "alter": 41}).json()["id"]
+
+    termin = client.post("/termine", json={
+        "datum": "2026-07-01", "uhrzeit": "10:00", "anzahl_benoetigt": 2
+    }).json()
+
+    result = client.post(f"/termine/{termin['id']}/auto-assign", json={})
+    assert result.status_code == 200
+    assigned_ids = {z["ministrant_id"] for z in result.json()["zuteilungen"]}
+
+    jung_ids = {jung1, jung2}
+    alt_ids = {alt1, alt2}
+    # Exakt 1 aus jeder Gruppe
+    assert len(assigned_ids & jung_ids) == 1
+    assert len(assigned_ids & alt_ids) == 1
+
+
+def test_auto_assign_falls_back_when_only_one_group(client):
+    # Nur Ministranten ohne Altersangabe (neutral)
+    n1 = client.post("/ministranten", json={"name": "N1"}).json()["id"]
+    n2 = client.post("/ministranten", json={"name": "N2"}).json()["id"]
+
+    termin = client.post("/termine", json={
+        "datum": "2026-07-02", "uhrzeit": "10:00", "anzahl_benoetigt": 2
+    }).json()
+
+    result = client.post(f"/termine/{termin['id']}/auto-assign", json={})
+    assert result.status_code == 200
+    assert len(result.json()["zuteilungen"]) == 2
